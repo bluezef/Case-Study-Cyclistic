@@ -1,0 +1,135 @@
+---
+title: "Case Study: Cyclistic"
+author: "Ernesto González (@bluezef)"
+date: "2023-10-31"
+output:
+  pdf_document: default
+  html_document: default
+---
+# Cyclistic
+
+## How Does a Bike-Share Navigate Speedy Success?
+Business task: Investigate the differences between Cyclistic annual members and casual rider in relation to the service use.
+
+### Importing Libraries
+Importing libraries tidyverse,dplyr,readr,ggplot2 and lubricate for data analysis
+```{r importing libraries}
+library(tidyverse)
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(lubridate)
+```
+
+### Merging CSV files into one data frame
+Collecting data from 12 .csv files
+```{r merging files into dataset}
+divvy_tripdata <- list.files(path='~/Case Study Cyclistic', pattern="*.csv") %>% 
+  lapply(read_csv) %>% 
+  bind_rows
+glimpse(divvy_tripdata)
+```
+
+### Cleaning data
+Removing null values and duplicated
+```{r cleaning}
+divvy_tripdata_cleaned <- divvy_tripdata %>% 
+  na.omit() %>% 
+  distinct()
+```
+
+### Previewing data
+Data Frame Structure
+```{r preview structure}
+str(divvy_tripdata_cleaned)
+```
+
+### Calculating travel times, day of the week and month of trip
+Adding columns for trip length, day of the week in which the trip was done, and month of the trip
+```{r}
+divvy_tripdata_cleaned <- divvy_tripdata_cleaned %>% 
+  mutate(trip_length=ended_at-started_at) %>% 
+  mutate(day_of_week=weekdays(started_at)) %>% 
+  mutate(month_trip=month(started_at))
+str(divvy_tripdata_cleaned)
+```
+### Min,Max and Mean
+Minimum, Maximum and Mean values for current dataframe
+```{r exploratory}
+min(divvy_tripdata_cleaned$trip_length)
+max(divvy_tripdata_cleaned$trip_length)
+mean(divvy_tripdata_cleaned$trip_length)
+```
+Max and Min far from Mean
+
+## Sorting
+Looking for outliers sorting data ascending and descending by trip length
+```{r sorting}
+select(arrange(divvy_tripdata_cleaned,trip_length),trip_length)
+select(arrange(divvy_tripdata_cleaned,desc(trip_length)),trip_length)
+```
+
+### Filtering due to outliers
+Removing the outliers
+```{r filter2}
+divvy_tripdata_cleaned <- divvy_tripdata_cleaned %>% 
+  filter(trip_length>60 & trip_length<90000)
+```
+
+### Trips per type of user
+```{r per type}
+ggplot(divvy_tripdata_cleaned)+
+  geom_bar(aes(member_casual),fill="blue")+
+  theme(axis.text.x = element_text(angle = 45))+
+  labs(title="Number of trips by type of user",
+       x="Days of the Week", y="Number of trips",
+       caption="Data collected from Oct 2022 to Sep 2023")
+```
+
+### Trips per day of the week
+```{r per day}
+ggplot(divvy_tripdata_cleaned)+
+  geom_bar(aes(day_of_week,fill=day_of_week))+
+  facet_grid(~member_casual~rideable_type)+
+  theme(axis.text.x = element_text(angle = 45))+
+  labs(title="Number of trips by day of the week",
+       subtitle="Splitted by driveable type and type of user",
+       x="Days of the Week", y="Number of trips",
+       caption="Data collected from Oct 2022 to Sep 2023")
+```
+### Trips per month
+```{r per month}
+ggplot(divvy_tripdata_cleaned)+
+  geom_bar(aes(month_trip),fill="blue")+
+  facet_grid(~member_casual~rideable_type)+
+  labs(title="Number of trips by month",
+       subtitle="Splitted by driveable type and type of user",
+       x="Month", y="Number of trips",
+       caption="Data collected from Oct 2022 to Sep 2023")
+```
+### Min,Max and Mean for Members
+Minimum, Maximum and Mean values for Member users
+```{r exploratorymembers}
+min(filter(divvy_tripdata_cleaned,member_casual=="member")$trip_length)
+max(filter(divvy_tripdata_cleaned,member_casual=="member")$trip_length)
+mean(filter(divvy_tripdata_cleaned,member_casual=="member")$trip_length)
+```
+### Min,Max and Mean for Casual
+Minimum, Maximum and Mean values for Casual users
+```{r exploratorycasuals}
+min(filter(divvy_tripdata_cleaned,member_casual=="casual")$trip_length)
+max(filter(divvy_tripdata_cleaned,member_casual=="casual")$trip_length)
+mean(filter(divvy_tripdata_cleaned,member_casual=="casual")$trip_length)
+```
+## Findings
+* Casual users make around 50% of the trips that the Members do
+* Non member users mostly use our service during Saturday, this may be due to the fact of it being weekend, as recreation. While member users use our service throughout the whole week, this due to them using the service constantly to go to work.
+* The mean trip length for Members is 743.33 secs while for Casuals is 1388.23 secs, as they may be using the service as recreation, this may be the reason why their trips are longer compared to the member trips who mainly use it to go to work.
+* The month of the year in where most trips are made are in August, this may be due to the Summer season.
+
+## Possible future studies
+* Why do Casuals take longer trips when trips are less than the amount of trips made by Members? Hypothesis: The members mostly use the service to go to work on weekdays, which make the room for longer trips smaller.
+* Why do Casuals do much more less trips than Members? Hypothesis: They drive, walk or take a bus to their work, so a membership is not really necessary
+
+## Recommendations
+* Start campaigns or promotional events for joining new members on August's Saturdays to reach most of the casual users.
